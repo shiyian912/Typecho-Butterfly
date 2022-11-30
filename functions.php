@@ -1389,6 +1389,35 @@ function getOs($agent)
     echo $os;
 }
 
+//评论添加IP归属地信息，采用开源的IP接口
+function getIp($ip)
+{
+    $addr_area = json_decode(file_get_contents('https://ip.taobao.com/outGetIpInfo?ip='.$ip.'&accessKey=alibaba-inc'));
+    if ($addr_area->code == 0) {
+        if (strcmp('XX', $addr_area->data->city)) {
+            echo '&nbsp;/&nbsp;' . $addr_area->data->city;
+        } else if (strcmp('XX', $addr_area->data->region)) {
+            echo '&nbsp;/&nbsp;' . $addr_area->data->region;
+        } else if (strcmp('XX', $addr_area->data->country)) {
+            echo '&nbsp;/&nbsp;' . $addr_area->data->country;
+        } else {
+            echo '&nbsp;/&nbsp;未知';
+        }
+        return;
+    }
+    $addr_area = file_get_contents('http://whois.pconline.com.cn/ipJson.jsp?json=true&ip=' . $ip);
+    $addr_area = json_decode(trim(mb_convert_encoding($addr_area, "UTF-8", "GBK")), true);
+    if ($addr_area !== false) {
+        if (empty($addr_area['city'])) {
+            echo '&nbsp;/&nbsp;未知';
+            return;
+        }
+        echo '&nbsp;/&nbsp;' . $addr_area['city'];
+        return;
+    }
+    echo '&nbsp;/&nbsp;未知';
+}
+
 function commentRank($widget, $email = NULL)      
 {      
     if (empty($email)) return;      
@@ -1489,7 +1518,7 @@ echo $commentClass;
             <?php endif ?>
         </div>
         <div class="comment-content"><?php $comments->content(); ?></div>
-        <span class="comment-ua"><?php getOs($comments->agent); ?><?php getBrowser($comments->agent); ?></span>
+        <span class="comment-ua"><?php getOs($comments->agent); ?><?php getBrowser($comments->agent); ?><?php getIp($comments->ip); ?></span>
     </div>
 <?php if ($comments->children) { ?>
     <div class="comment-children">
